@@ -39,24 +39,7 @@ namespace LinkVault.Portal
             app.MapControllers();
 
 
-            IDFManager.Configure(new IDFManagerConfig
-            {
-                DatabaseType = DatabaseType.MSSQL,
-                //DBConnectionString = "Data Source=LinkVault.db",
-                DBConnectionString = "Server=10.38.38.199;Database=LinkVault;User Id=sa;Password=SMedi@33333;TrustServerCertificate=True",
-                DefaultListPageSize = 25,
-                DBLifeCycle = DBLifeCycle.Both,
-                IsActiveByDefault = true,
-                IsLockedByDefault = false,
-                DefaultTokenLifeTime = new LifeTime(365, 0, 0),
-                AllowUserMultipleSessions = false,
-                TokenEncryptionKey = "123456",
-                AdministratorUserName = "admin",
-                AdministratorPassword = "admin",
-                AdministratorRoleName = "Administrators",
-                TokenValidationMode = TokenValidationMode.DecryptOnly
-
-            });
+            ConfigureIdentity(builder.Configuration);
 
             LinkVaultDbContext db = new();
             db.Database.EnsureCreated();
@@ -66,6 +49,49 @@ namespace LinkVault.Portal
 
 
             app.Run();
+        }
+
+        // Identity settings come from configuration (appsettings.json, user secrets,
+        // or environment variables) so that no credentials live in source control.
+        private static void ConfigureIdentity(IConfiguration configuration)
+        {
+            var identity = configuration.GetSection("Identity");
+
+            var connectionString = Require(identity, "ConnectionString");
+            var tokenEncryptionKey = Require(identity, "TokenEncryptionKey");
+            var administratorPassword = Require(identity, "AdministratorPassword");
+
+            IDFManager.Configure(new IDFManagerConfig
+            {
+                DatabaseType = Enum.Parse<DatabaseType>(
+                    identity["DatabaseType"] ?? nameof(DatabaseType.MSSQL), ignoreCase: true),
+                DBConnectionString = connectionString,
+                DefaultListPageSize = identity.GetValue("DefaultListPageSize", 25),
+                DBLifeCycle = DBLifeCycle.Both,
+                IsActiveByDefault = true,
+                IsLockedByDefault = false,
+                DefaultTokenLifeTime = new LifeTime(identity.GetValue("TokenLifeTimeDays", 365), 0, 0),
+                AllowUserMultipleSessions = identity.GetValue("AllowUserMultipleSessions", false),
+                TokenEncryptionKey = tokenEncryptionKey,
+                AdministratorUserName = identity["AdministratorUserName"] ?? "admin",
+                AdministratorPassword = administratorPassword,
+                AdministratorRoleName = identity["AdministratorRoleName"] ?? "Administrators",
+                TokenValidationMode = TokenValidationMode.DecryptOnly
+            });
+        }
+
+        private static string Require(IConfigurationSection section, string key)
+        {
+            var value = section[key];
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                throw new InvalidOperationException(
+                    $"Missing configuration value 'Identity:{key}'. Set it via user secrets " +
+                    $"(dotnet user-secrets set \"Identity:{key}\" \"<value>\") or the " +
+                    $"Identity__{key} environment variable.");
+            }
+
+            return value;
         }
     }
 }

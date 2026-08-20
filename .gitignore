@@ -419,3 +419,11 @@ FodyWeavers.xsd
 
 # Claude Code
 .claude/
+
+# LinkVault local database files
+*.db
+*.db-shm
+*.db-wal
+
+# Local secrets
+appsettings.Local.json
