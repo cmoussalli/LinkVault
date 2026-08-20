@@ -1,0 +1,197 @@
+@page "/admin"
+@layout AdminLayout
+@using LinkVault.Portal.Services
+@using LinkVault.Portal.Models
+@rendermode InteractiveServer
+
+<PageTitle>Dashboard - LinkVault Admin</PageTitle>
+
+<!-- Page Header -->
+<div class="mb-4">
+    <h2 class="fw-bold mb-2">Dashboard</h2>
+    <p class="text-muted">Welcome back! Here's what's happening with your links.</p>
+</div>
+
+<!-- Stats Cards -->
+<div class="row g-4 mb-4">
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="card border-0 h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <div class="d-flex align-items-center justify-content-center rounded-circle" style="width: 48px; height: 48px; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);">
+                        <i class="bi bi-link-45deg fs-4 text-white"></i>
+                    </div>
+                    <span class="badge bg-primary bg-opacity-10 text-primary">Total</span>
+                </div>
+                <h3 class="fw-bold mb-1 gradient-text">@totalLinks</h3>
+                <p class="text-muted small mb-0">Total Links</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="card border-0 h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <div class="d-flex align-items-center justify-content-center rounded-circle" style="width: 48px; height: 48px; background: linear-gradient(135deg, #10b981 0%, #06b6d4 100%);">
+                        <i class="bi bi-calendar-day fs-4 text-white"></i>
+                    </div>
+                    <span class="badge bg-success bg-opacity-10 text-success">Today</span>
+                </div>
+                <h3 class="fw-bold mb-1" style="color: #10b981;">@clicksToday</h3>
+                <p class="text-muted small mb-0">Clicks Today</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="card border-0 h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <div class="d-flex align-items-center justify-content-center rounded-circle" style="width: 48px; height: 48px; background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);">
+                        <i class="bi bi-calendar-week fs-4 text-white"></i>
+                    </div>
+                    <span class="badge bg-info bg-opacity-10 text-info">Week</span>
+                </div>
+                <h3 class="fw-bold mb-1" style="color: #06b6d4;">@clicksThisWeek</h3>
+                <p class="text-muted small mb-0">Clicks This Week</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="card border-0 h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <div class="d-flex align-items-center justify-content-center rounded-circle" style="width: 48px; height: 48px; background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);">
+                        <i class="bi bi-calendar-month fs-4 text-white"></i>
+                    </div>
+                    <span class="badge bg-warning bg-opacity-10 text-warning">Month</span>
+                </div>
+                <h3 class="fw-bold mb-1" style="color: #f59e0b;">@clicksThisMonth</h3>
+                <p class="text-muted small mb-0">Clicks This Month</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Content Sections -->
+<div class="row g-4">
+    <!-- Top Performing Links -->
+    <div class="col-lg-7">
+        <div class="card border-0 h-100">
+            <div class="card-header bg-white border-bottom-0 d-flex align-items-center justify-content-between py-3">
+                <h5 class="mb-0 fw-bold">
+                    <i class="bi bi-trophy text-warning me-2"></i>
+                    Top Performing Links
+                </h5>
+                <a href="/admin/links" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body">
+                @if (topLinks?.Any() == true)
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead>
+                                <tr>
+                                    <th class="border-0">Short Code</th>
+                                    <th class="border-0">Title</th>
+                                    <th class="border-0 text-end">Clicks</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var link in topLinks)
+                                {
+                                    <tr>
+                                        <td>
+                                            <code class="px-2 py-1 rounded" style="background: #f8fafc; color: #6366f1; font-weight: 600;">@link.ShortCode</code>
+                                        </td>
+                                        <td class="fw-medium">@(string.IsNullOrEmpty(link.Title) ? "Untitled" : link.Title)</td>
+                                        <td class="text-end">
+                                            <span class="badge bg-primary">@link.ClickCount</span>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-5">
+                        <i class="bi bi-link-45deg fs-1 text-muted mb-3 d-block"></i>
+                        <p class="text-muted mb-3">No links created yet.</p>
+                        <a href="/admin/links/create" class="btn btn-primary">Create Your First Link</a>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="col-lg-5">
+        <div class="card border-0 h-100">
+            <div class="card-header bg-white border-bottom-0 d-flex align-items-center justify-content-between py-3">
+                <h5 class="mb-0 fw-bold">
+                    <i class="bi bi-activity text-success me-2"></i>
+                    Recent Activity
+                </h5>
+            </div>
+            <div class="card-body">
+                @if (recentActivity?.Any() == true)
+                {
+                    <div class="d-flex flex-column gap-3">
+                        @foreach (var activity in recentActivity)
+                        {
+                            <div class="d-flex align-items-start gap-3 pb-3 border-bottom">
+                                <div class="d-flex align-items-center justify-content-center rounded-circle flex-shrink-0" style="width: 40px; height: 40px; background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);">
+                                    <i class="bi bi-cursor-fill" style="color: #6366f1;"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <div class="d-flex align-items-center justify-content-between mb-1">
+                                        <code class="small px-2 py-1 rounded" style="background: #f8fafc; color: #6366f1; font-weight: 600;">@activity.Link.ShortCode</code>
+                                        <small class="text-muted">@activity.ClickedAt.ToString("MMM dd, HH:mm")</small>
+                                    </div>
+                                    <p class="small text-muted mb-0">Link was clicked</p>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-5">
+                        <i class="bi bi-clock-history fs-1 text-muted mb-3 d-block"></i>
+                        <p class="text-muted mb-0">No activity yet.</p>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private int totalLinks;
+    private int clicksToday;
+    private int clicksThisWeek;
+    private int clicksThisMonth;
+    private IEnumerable<Link>? topLinks;
+    private IEnumerable<ClickLog>? recentActivity;
+
+    AnalyticsService analyticsService = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDashboardData();
+    }
+
+    private async Task LoadDashboardData()
+    {
+        totalLinks = await analyticsService.GetTotalLinksAsync();
+        clicksToday = await analyticsService.GetTotalClicksTodayAsync();
+        clicksThisWeek = await analyticsService.GetTotalClicksThisWeekAsync();
+        clicksThisMonth = await analyticsService.GetTotalClicksThisMonthAsync();
+        topLinks = await analyticsService.GetTopPerformingLinksAsync(5);
+        recentActivity = await analyticsService.GetRecentActivityAsync(10);
+    }
+}

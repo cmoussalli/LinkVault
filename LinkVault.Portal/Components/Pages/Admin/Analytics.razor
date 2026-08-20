@@ -1,0 +1,775 @@
+
+@page "/admin/analytics"
+@page "/admin/analytics/{shortCode}"
+@layout AdminLayout
+@using LinkVault.Portal.Services
+@using LinkVault.Portal.Models
+@using Microsoft.JSInterop
+@inject IJSRuntime JSRuntime
+@rendermode InteractiveServer
+
+<PageTitle>Analytics Dashboard - LinkVault Admin</PageTitle>
+
+<div class="analytics-dashboard">
+    <!-- Header Section -->
+    <div class="dashboard-header mb-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="dashboard-title">
+                    <i class="bi bi-graph-up text-primary me-2"></i>
+                    Analytics Dashboard
+                </h1>
+                @if (selectedLink != null)
+                {
+                    <p class="dashboard-subtitle mb-0">
+                        Detailed analytics for <code class="text-primary">@selectedLink.ShortCode</code>
+                    </p>
+                }
+                else
+                {
+                    <p class="dashboard-subtitle mb-0">System-wide analytics overview</p>
+                }
+            </div>
+            <div class="dashboard-actions">
+                @if (selectedLink != null)
+                {
+                    <a href="/admin/analytics" class="btn btn-outline-secondary me-2">
+                        <i class="bi bi-arrow-left"></i> Overview
+                    </a>
+                }
+                <a href="/admin/links" class="btn btn-outline-primary">
+                    <i class="bi bi-link-45deg"></i> Manage Links
+                </a>
+            </div>
+        </div>
+    </div>
+
+    @if (selectedLink == null)
+    {
+        <!-- System Overview Dashboard -->
+        <div class="system-overview">
+            <!-- Key Performance Indicators -->
+            <div class="row mb-4">
+                <div class="col-xl-3 col-md-6 mb-3">
+                    <div class="kpi-card card border-0 shadow-sm h-100">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="kpi-icon bg-primary bg-gradient">
+                                    <i class="bi bi-link-45deg text-white"></i>
+                                </div>
+                                <div class="ms-3">
+                                    <div class="kpi-value">@totalLinks</div>
+                                    <div class="kpi-label">Total Links</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-3 col-md-6 mb-3">
+                    <div class="kpi-card card border-0 shadow-sm h-100">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="kpi-icon bg-success bg-gradient">
+                                    <i class="bi bi-cursor-fill text-white"></i>
+                                </div>
+                                <div class="ms-3">
+                                    <div class="kpi-value">@clicksToday</div>
+                                    <div class="kpi-label">Clicks Today</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-3 col-md-6 mb-3">
+                    <div class="kpi-card card border-0 shadow-sm h-100">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="kpi-icon bg-info bg-gradient">
+                                    <i class="bi bi-calendar-week text-white"></i>
+                                </div>
+                                <div class="ms-3">
+                                    <div class="kpi-value">@clicksThisWeek</div>
+                                    <div class="kpi-label">This Week</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-3 col-md-6 mb-3">
+                    <div class="kpi-card card border-0 shadow-sm h-100">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="kpi-icon bg-warning bg-gradient">
+                                    <i class="bi bi-calendar-month text-white"></i>
+                                </div>
+                                <div class="ms-3">
+                                    <div class="kpi-value">@clicksThisMonth</div>
+                                    <div class="kpi-label">This Month</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top Performing Links -->
+            <div class="row mb-4">
+                <div class="col-lg-8 mb-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header bg-white border-0 pb-0">
+                            <h5 class="card-title mb-0">
+                                <i class="bi bi-trophy text-warning me-2"></i>
+                                Top Performing Links
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            @if (topPerformingLinks?.Any() == true)
+                            {
+                                <div class="table-responsive">
+                                    <table class="table table-hover align-middle">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Rank</th>
+                                                <th>Short Code</th>
+                                                <th>Title</th>
+                                                <th>Clicks</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @{int rank = 1;}
+                                            @foreach (var link in topPerformingLinks.Take(10))
+                                            {
+                                                <tr>
+                                                    <td>
+                                                        <span class="rank-badge">@rank</span>
+                                                    </td>
+                                                    <td>
+                                                        <code class="text-primary">@link.ShortCode</code>
+                                                    </td>
+                                                    <td>
+                                                        <div class="link-title">
+                                                            @(string.IsNullOrEmpty(link.Title) ? "No title" : link.Title)
+                                                        </div>
+                                                        <small class="text-muted">@link.RedirectUrl</small>
+                                                    </td>
+                                                    <td>
+                                                        <span class="badge bg-primary fs-6">@link.ClickCount</span>
+                                                    </td>
+                                                    <td>
+                                                        <a href="/admin/analytics/@link.ShortCode" class="btn btn-sm btn-outline-primary">
+                                                            <i class="bi bi-bar-chart"></i> View
+                                                        </a>
+                                                    </td>
+                                                </tr>
+                                                rank++;
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="text-center py-4">
+                                    <i class="bi bi-graph-up text-muted icon-size-3rem"></i>
+                                    <p class="text-muted mt-3">No performance data available yet.</p>
+                                    <a href="/admin/links/create" class="btn btn-primary">Create Your First Link</a>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-4 mb-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header bg-white border-0 pb-0">
+                            <h5 class="card-title mb-0">
+                                <i class="bi bi-clock-history text-info me-2"></i>
+                                Recent Activity
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            @if (recentActivity?.Any() == true)
+                            {
+                                <div class="activity-feed">
+                                    @foreach (var activity in recentActivity.Take(8))
+                                    {
+                                        <div class="activity-item">
+                                            <div class="activity-icon">
+                                                <i class="bi bi-cursor-fill text-success"></i>
+                                            </div>
+                                            <div class="activity-content">
+                                                <div class="activity-title">
+                                                    Click on <code>@activity.Link.ShortCode</code>
+                                                </div>
+                                                <div class="activity-meta">
+                                                    <small class="text-muted">
+                                                        @activity.ClickedAt.ToString("MMM dd, HH:mm")
+                                                        @if (!string.IsNullOrEmpty(activity.Country))
+                                                        {
+                                                            <span class="ms-2">
+                                                                <i class="bi bi-geo-alt"></i> @activity.Country
+                                                            </span>
+                                                        }
+                                                    </small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="text-center py-4">
+                                    <i class="bi bi-clock-history text-muted icon-size-2rem"></i>
+                                    <p class="text-muted mt-2">No recent activity</p>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Link Selection -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white border-0 pb-0">
+                            <h5 class="card-title mb-0">
+                                <i class="bi bi-search text-primary me-2"></i>
+                                Analyze Specific Link
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            @if (allLinks?.Any() == true)
+                            {
+                                <div class="row">
+                                    @foreach (var link in allLinks.Take(12))
+                                    {
+                                        <div class="col-xl-3 col-lg-4 col-md-6 mb-3">
+                                            <div class="link-card">
+                                                <a href="/admin/analytics/@link.ShortCode" class="text-decoration-none">
+                                                    <div class="link-card-content">
+                                                        <div class="link-code">@link.ShortCode</div>
+                                                        <div class="link-title">@(string.IsNullOrEmpty(link.Title) ? "No title" : link.Title)</div>
+                                                        <div class="link-stats">
+                                                            <span class="clicks">@link.ClickCount clicks</span>
+                                                            <span class="date">@link.CreatedAt.ToString("MMM dd")</span>
+                                                        </div>
+                                                    </div>
+                                                </a>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                                @if (allLinks.Count() > 12)
+                                {
+                                    <div class="text-center mt-3">
+                                        <a href="/admin/links" class="btn btn-outline-primary">
+                                            View All @allLinks.Count() Links
+                                        </a>
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <div class="text-center py-4">
+                                    <i class="bi bi-link-45deg text-muted icon-size-3rem"></i>
+                                    <p class="text-muted mt-3">No links available for analysis.</p>
+                                    <a href="/admin/links/create" class="btn btn-primary">Create Your First Link</a>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <!-- Individual Link Analytics -->
+        <div class="link-analytics">
+            <!-- Link Overview Cards -->
+            <div class="row mb-4">
+                <div class="col-xl-3 col-md-6 mb-3">
+                    <div class="metric-card card border-0 shadow-sm h-100">
+                        <div class="card-body text-center">
+                            <div class="metric-icon mb-3">
+                                <i class="bi bi-cursor-fill text-primary"></i>
+                            </div>
+                            <div class="metric-value text-primary">@selectedLink.ClickCount</div>
+                            <div class="metric-label">Total Clicks</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-3 col-md-6 mb-3">
+                    <div class="metric-card card border-0 shadow-sm h-100">
+                        <div class="card-body text-center">
+                            <div class="metric-icon mb-3">
+                                <i class="bi bi-calendar-plus text-success"></i>
+                            </div>
+                            <div class="metric-value text-success">@selectedLink.CreatedAt.ToString("MMM dd, yyyy")</div>
+                            <div class="metric-label">Created</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-3 col-md-6 mb-3">
+                    <div class="metric-card card border-0 shadow-sm h-100">
+                        <div class="card-body text-center">
+                            <div class="metric-icon mb-3">
+                                @if (selectedLink.IsActive && (!selectedLink.ExpiresAt.HasValue || selectedLink.ExpiresAt.Value > DateTime.UtcNow))
+                                {
+                                    <i class="bi bi-check-circle-fill text-success"></i>
+                                }
+                                else if (selectedLink.ExpiresAt.HasValue && selectedLink.ExpiresAt.Value <= DateTime.UtcNow)
+                                {
+                                    <i class="bi bi-clock-fill text-warning"></i>
+                                }
+                                else
+                                {
+                                    <i class="bi bi-pause-circle-fill text-secondary"></i>
+                                }
+                            </div>
+                            <div class="metric-value">
+                                @if (selectedLink.IsActive && (!selectedLink.ExpiresAt.HasValue || selectedLink.ExpiresAt.Value > DateTime.UtcNow))
+                                {
+                                    <span class="text-success">Active</span>
+                                }
+                                else if (selectedLink.ExpiresAt.HasValue && selectedLink.ExpiresAt.Value <= DateTime.UtcNow)
+                                {
+                                    <span class="text-warning">Expired</span>
+                                }
+                                else
+                                {
+                                    <span class="text-secondary">Inactive</span>
+                                }
+                            </div>
+                            <div class="metric-label">Status</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-3 col-md-6 mb-3">
+                    <div class="metric-card card border-0 shadow-sm h-100">
+                        <div class="card-body text-center">
+                            <div class="metric-icon mb-3">
+                                <i class="bi bi-link-45deg text-info"></i>
+                            </div>
+                            <div class="metric-value text-info">@selectedLink.ShortCode</div>
+                            <div class="metric-label">Short Code</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts and Analytics -->
+            <div class="row mb-4">
+                <div class="col-lg-8 mb-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header bg-white border-0">
+                            <h5 class="card-title mb-0">
+                                <i class="bi bi-graph-up text-primary me-2"></i>
+                                Click Trends (Last 30 Days)
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            @if (clicksByDate?.Any() == true)
+                            {
+                                <div class="chart-container">
+                                    <canvas id="clicksChart" width="400" height="200"></canvas>
+                                </div>
+                                <div class="chart-summary mt-3">
+                                    <div class="row text-center">
+                                        <div class="col-4">
+                                            <div class="summary-item">
+                                                <div class="summary-value">@clicksByDate.Values.Sum()</div>
+                                                <div class="summary-label">Total Clicks</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-4">
+                                            <div class="summary-item">
+                                                <div class="summary-value">@Math.Round(clicksByDate.Values.Average(), 1)</div>
+                                                <div class="summary-label">Daily Average</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-4">
+                                            <div class="summary-item">
+                                                <div class="summary-value">@clicksByDate.Values.Max()</div>
+                                                <div class="summary-label">Peak Day</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="text-center py-5">
+                                    <i class="bi bi-graph-up text-muted icon-size-4rem"></i>
+                                    <p class="text-muted mt-3">No click data available for this link yet.</p>
+                                    <p class="text-muted">Share your link to start collecting analytics!</p>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-4">
+                    <div class="row">
+                        <div class="col-12 mb-4">
+                            <div class="card border-0 shadow-sm h-100">
+                                <div class="card-header bg-white border-0">
+                                    <h6 class="card-title mb-0">
+                                        <i class="bi bi-share text-success me-2"></i>
+                                        Top Referrers
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    @if (clicksByReferrer?.Any() == true)
+                                    {
+                                        @foreach (var referrer in clicksByReferrer.Take(5))
+                                        {
+                                            <div class="referrer-item">
+                                                <div class="referrer-info">
+                                                    <div class="referrer-name">
+                                                        @if (referrer.Key == "Direct")
+                                                        {
+                                                            <i class="bi bi-arrow-right-circle text-muted me-1"></i>
+                                                            <span>Direct</span>
+                                                        }
+                                                        else
+                                                        {
+                                                            <i class="bi bi-link-45deg text-primary me-1"></i>
+                                                            <span>@(new Uri(referrer.Key).Host)</span>
+                                                        }
+                                                    </div>
+                                                    <div class="referrer-progress">
+                                                        <div class="progress progress-height-4">
+                                                            <div class="progress-bar bg-success" style="width: @(clicksByReferrer.Values.Max() > 0 ? (referrer.Value * 100.0 / clicksByReferrer.Values.Max()) : 0)%"></div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <span class="referrer-count badge bg-success">@referrer.Value</span>
+                                            </div>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <div class="text-center py-3">
+                                            <i class="bi bi-share text-muted icon-size-2rem"></i>
+                                            <p class="text-muted mt-2 mb-0">No referrer data</p>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-12">
+                            <div class="card border-0 shadow-sm h-100">
+                                <div class="card-header bg-white border-0">
+                                    <h6 class="card-title mb-0">
+                                        <i class="bi bi-geo-alt text-info me-2"></i>
+                                        Geographic Distribution
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    @if (clicksByCountry?.Any() == true)
+                                    {
+                                        @foreach (var country in clicksByCountry.Take(5))
+                                        {
+                                            <div class="country-item">
+                                                <div class="country-info">
+                                                    <div class="country-name">
+                                                        <i class="bi bi-flag text-primary me-1"></i>
+                                                        @country.Key
+                                                    </div>
+                                                    <div class="country-progress">
+                                                        <div class="progress progress-height-4">
+                                                            <div class="progress-bar bg-info" style="width: @(clicksByCountry.Values.Max() > 0 ? (country.Value * 100.0 / clicksByCountry.Values.Max()) : 0)%"></div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <span class="country-count badge bg-info">@country.Value</span>
+                                            </div>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <div class="text-center py-3">
+                                            <i class="bi bi-geo-alt text-muted icon-size-2rem"></i>
+                                            <p class="text-muted mt-2 mb-0">No geographic data</p>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Link Details -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white border-0">
+                            <h5 class="card-title mb-0">
+                                <i class="bi bi-info-circle text-primary me-2"></i>
+                                Link Details
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-lg-6 mb-3">
+                                    <div class="detail-item">
+                                        <label class="detail-label">Original URL</label>
+                                        <div class="detail-value">
+                                            <a href="@selectedLink.RedirectUrl" target="_blank" class="text-decoration-none">
+                                                @selectedLink.RedirectUrl
+                                                <i class="bi bi-box-arrow-up-right ms-1"></i>
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-lg-6 mb-3">
+                                    <div class="detail-item">
+                                        <label class="detail-label">Title</label>
+                                        <div class="detail-value">
+                                            @(string.IsNullOrEmpty(selectedLink.Title) ? "No title" : selectedLink.Title)
+                                        </div>
+                                    </div>
+                                </div>
+                                @if (selectedLink.ExpiresAt.HasValue)
+                                {
+                                    <div class="col-lg-6 mb-3">
+                                        <div class="detail-item">
+                                            <label class="detail-label">Expires</label>
+                                            <div class="detail-value">
+                                                @selectedLink.ExpiresAt.Value.ToString("MMM dd, yyyy HH:mm")
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                                <div class="col-lg-6 mb-3">
+                                    <div class="detail-item">
+                                        <label class="detail-label">Link Type</label>
+                                        <div class="detail-value">
+                                            <span class="badge bg-secondary">@selectedLink.Type</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script suppressError="BL9992">
+    window.initializeClicksChart = (canvasId, labels, data) => {
+        const ctx = document.getElementById(canvasId);
+        if (!ctx) return;
+
+        // Destroy existing chart if it exists
+        if (window.clicksChartInstance) {
+            window.clicksChartInstance.destroy();
+        }
+
+        window.clicksChartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Clicks',
+                    data: data,
+                    borderColor: '#0d6efd',
+                    backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: '#0d6efd',
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 2,
+                    pointRadius: 5,
+                    pointHoverRadius: 7
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        titleColor: '#ffffff',
+                        bodyColor: '#ffffff',
+                        borderColor: '#0d6efd',
+                        borderWidth: 1,
+                        cornerRadius: 8,
+                        displayColors: false,
+                        callbacks: {
+                            title: function(context) {
+                                return 'Date: ' + context[0].label;
+                            },
+                            label: function(context) {
+                                return 'Clicks: ' + context.parsed.y;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            color: '#6c757d',
+                            font: {
+                                size: 12
+                            }
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.1)'
+                        },
+                        ticks: {
+                            color: '#6c757d',
+                            font: {
+                                size: 12
+                            },
+                            stepSize: 1
+                        }
+                    }
+                },
+                interaction: {
+                    intersect: false,
+                    mode: 'index'
+                },
+                elements: {
+                    point: {
+                        hoverBackgroundColor: '#0d6efd'
+                    }
+                }
+            }
+        });
+    };
+
+    window.blazorCulture = {
+        get: () => window.localStorage['BlazorCulture'],
+        set: (value) => window.localStorage['BlazorCulture'] = value
+    };
+</script>
+
+@code {
+    [Parameter] public string? ShortCode { get; set; }
+
+    private Link? selectedLink;
+    private IEnumerable<Link>? allLinks;
+    private Dictionary<string, int>? clicksByDate;
+    private Dictionary<string, int>? clicksByCountry;
+    private Dictionary<string, int>? clicksByReferrer;
+
+    // System-wide analytics
+    private int totalLinks;
+    private int clicksToday;
+    private int clicksThisWeek;
+    private int clicksThisMonth;
+    private IEnumerable<Link>? topPerformingLinks;
+    private IEnumerable<ClickLog>? recentActivity;
+
+    LinkService linkService = new();
+    AnalyticsService analyticsService = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        allLinks = await linkService.GetAllLinksAsync();
+
+        if (!string.IsNullOrEmpty(ShortCode))
+        {
+            selectedLink = await linkService.GetLinkByShortCodeAsync(ShortCode);
+            if (selectedLink != null)
+            {
+                await LoadAnalyticsData();
+            }
+        }
+        else
+        {
+            await LoadSystemAnalytics();
+        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!string.IsNullOrEmpty(ShortCode) && (selectedLink == null || selectedLink.ShortCode != ShortCode))
+        {
+            selectedLink = await linkService.GetLinkByShortCodeAsync(ShortCode);
+            if (selectedLink != null)
+            {
+                await LoadAnalyticsData();
+            }
+        }
+        else if (string.IsNullOrEmpty(ShortCode) && selectedLink != null)
+        {
+            selectedLink = null;
+            await LoadSystemAnalytics();
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (selectedLink != null && clicksByDate?.Any() == true)
+        {
+            await InitializeChart();
+        }
+    }
+
+    private async Task LoadAnalyticsData()
+    {
+        if (selectedLink == null) return;
+
+        clicksByDate = await analyticsService.GetClicksByDateAsync(selectedLink.Id, 30);
+        clicksByCountry = await analyticsService.GetClicksByCountryAsync(selectedLink.Id);
+        clicksByReferrer = await analyticsService.GetClicksByReferrerAsync(selectedLink.Id);
+
+        StateHasChanged();
+        await InitializeChart();
+    }
+
+    private async Task LoadSystemAnalytics()
+    {
+        totalLinks = await analyticsService.GetTotalLinksAsync();
+        clicksToday = await analyticsService.GetTotalClicksTodayAsync();
+        clicksThisWeek = await analyticsService.GetTotalClicksThisWeekAsync();
+        clicksThisMonth = await analyticsService.GetTotalClicksThisMonthAsync();
+        topPerformingLinks = await analyticsService.GetTopPerformingLinksAsync(10);
+        recentActivity = await analyticsService.GetRecentActivityAsync(20);
+    }
+
+    private async Task InitializeChart()
+    {
+        if (clicksByDate?.Any() != true) return;
+
+        try
+        {
+            var labels = clicksByDate.Keys.ToArray();
+            var data = clicksByDate.Values.ToArray();
+
+            await Task.Delay(100); // Small delay to ensure DOM is ready
+
+            var module = await JSRuntime.InvokeAsync<IJSObjectReference>("import", "./js/analytics.js");
+            await module.InvokeVoidAsync("initializeClicksChart", "clicksChart", labels, data);
+        }
+        catch (Exception ex)
+        {
+            // Fallback to inline JavaScript if module loading fails
+            await JSRuntime.InvokeVoidAsync("initializeClicksChart", "clicksChart",
+                clicksByDate.Keys.ToArray(), clicksByDate.Values.ToArray());
+        }
+    }
+}

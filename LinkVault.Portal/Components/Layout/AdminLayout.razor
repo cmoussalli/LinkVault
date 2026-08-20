@@ -1,0 +1,84 @@
+@inherits LayoutComponentBase
+@namespace LinkVault.Portal.Components.Layout
+
+<AuthLayout>
+    <div class="d-flex" style="min-height: 100vh;">
+        <!-- Sidebar -->
+        <div class="d-flex flex-column flex-shrink-0 p-3 text-white" style="width: 280px; background: linear-gradient(180deg, #1e3a8a 0%, #3730a3 100%); box-shadow: 2px 0 10px rgba(0,0,0,0.1);">
+            <!-- Brand -->
+            <a href="/admin" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-white text-decoration-none">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="d-flex align-items-center justify-content-center rounded-circle" style="width: 40px; height: 40px; background: rgba(255, 255, 255, 0.2);">
+                        <i class="bi bi-shield-lock fs-5"></i>
+                    </div>
+                    <span class="fs-4 fw-bold">LinkVault</span>
+                </div>
+            </a>
+            <hr class="text-white-50" />
+
+            <!-- Navigation Menu -->
+            <NavMenu />
+
+            <hr class="text-white-50 mt-auto" />
+
+            <!-- User Section -->
+            <div class="d-flex align-items-center gap-3 p-2 rounded" style="background: rgba(255, 255, 255, 0.1);">
+                <div class="d-flex align-items-center justify-content-center rounded-circle" style="width: 36px; height: 36px; background: rgba(255, 255, 255, 0.2);">
+                    <i class="bi bi-person-fill"></i>
+                </div>
+                <div class="flex-grow-1">
+                    <div class="fw-semibold small">Admin User</div>
+                    <div class="text-white-50" style="font-size: 0.75rem;">Administrator</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="flex-grow-1 d-flex flex-column" style="background-color: #f8fafc;">
+            <!-- Top Bar -->
+            <header class="bg-white border-bottom shadow-sm">
+                <div class="container-fluid px-4 py-3">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <h1 class="h4 mb-0 fw-bold gradient-text">LinkVault Admin</h1>
+                        <div class="d-flex align-items-center gap-3">
+                            <button class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-2">
+                                <i class="bi bi-plus-circle"></i>
+                                <span class="d-none d-md-inline">New Link</span>
+                            </button>
+                            <LogoutLink />
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Page Content -->
+            <main class="flex-grow-1 overflow-auto">
+                <div class="container-fluid px-4 py-4">
+                    @Body
+                </div>
+            </main>
+
+            <!-- Footer -->
+            <footer class="bg-white border-top mt-auto">
+                <div class="container-fluid px-4 py-3">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center">
+                        <p class="text-muted small mb-0">
+                            &copy; 2025 LinkVault. All rights reserved.
+                        </p>
+                        <div class="d-flex gap-3">
+                            <a href="#" class="text-muted text-decoration-none small">Documentation</a>
+                            <a href="#" class="text-muted text-decoration-none small">Support</a>
+                        </div>
+                    </div>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+    <div id="blazor-error-ui">
+        An error has occurred. This application may no longer respond until reloaded.
+        <a href="" class="reload">Reload</a>
+        <a class="dismiss">🗙</a>
+    </div>
+
+</AuthLayout>

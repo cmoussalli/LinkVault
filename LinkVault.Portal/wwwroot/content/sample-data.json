@@ -1,0 +1,24 @@
+{
+  "message": "Hello from LinkVault!",
+  "timestamp": "2024-01-01T00:00:00Z",
+  "data": {
+    "users": [
+      {
+        "id": 1,
+        "name": "John Doe",
+        "email": "john@example.com"
+      },
+      {
+        "id": 2,
+        "name": "Jane Smith",
+        "email": "jane@example.com"
+      }
+    ],
+    "stats": {
+      "totalLinks": 150,
+      "totalClicks": 2500,
+      "activeUsers": 45
+    }
+  },
+  "status": "success"
+}

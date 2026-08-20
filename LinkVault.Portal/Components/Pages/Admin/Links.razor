@@ -1,0 +1,302 @@
+@page "/admin/links"
+@layout AdminLayout
+@using LinkVault.Portal.Services
+@using LinkVault.Portal.Models
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+<PageTitle>Links Management - LinkVault Admin</PageTitle>
+
+<!-- Page Header -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-2">Links Management</h2>
+        <p class="text-muted mb-0">Manage all your short links in one place</p>
+    </div>
+    <a href="/admin/links/create" class="btn btn-primary d-inline-flex align-items-center gap-2">
+        <i class="bi bi-plus-circle"></i>
+        <span>Create New Link</span>
+    </a>
+</div>
+
+<!-- Links Card -->
+<div class="card border-0 shadow-sm">
+    <!-- Card Header with Search -->
+    <div class="card-header bg-white border-bottom">
+        <div class="row align-items-center g-3">
+            <div class="col-md-4">
+                <h5 class="mb-0 fw-bold">All Links (@(filteredLinks?.Count() ?? 0))</h5>
+            </div>
+            <div class="col-md-8">
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0">
+                        <i class="bi bi-search"></i>
+                    </span>
+                    <input type="text"
+                           class="form-control border-start-0"
+                           placeholder="Search by code, URL, or title..."
+                           @bind="searchTerm"
+                           @oninput="OnSearchChanged" />
+                    @if (!string.IsNullOrWhiteSpace(searchTerm))
+                    {
+                        <button class="btn btn-outline-secondary" type="button" @onclick="ClearSearch">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Card Body with Table -->
+    <div class="card-body p-0">
+        @if (isLoading)
+        {
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="text-muted mt-3 mb-0">Loading links...</p>
+            </div>
+        }
+        else if (filteredLinks?.Any() == true)
+        {
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="fw-semibold text-uppercase small px-4">Short Code</th>
+                            <th class="fw-semibold text-uppercase small">Original URL</th>
+                            <th class="fw-semibold text-uppercase small">Title</th>
+                            <th class="fw-semibold text-uppercase small">Clicks</th>
+                            <th class="fw-semibold text-uppercase small">Created</th>
+                            <th class="fw-semibold text-uppercase small">Status</th>
+                            <th class="fw-semibold text-uppercase small text-end px-4">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var link in filteredLinks)
+                        {
+                            <tr>
+                                <td class="px-4">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <code class="px-2 py-1 rounded" style="background: #f8fafc; color: #6366f1; font-weight: 600;">@link.ShortCode</code>
+                                        <button class="btn btn-sm btn-outline-secondary border-0"
+                                                @onclick="() => CopyToClipboard(GetShortUrl(link.ShortCode))"
+                                                title="Copy short URL">
+                                            <i class="bi bi-clipboard small"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                                <td>
+                                    <a href="@link.RedirectUrl"
+                                       target="_blank"
+                                       class="text-decoration-none text-truncate d-inline-block"
+                                       style="max-width: 300px;"
+                                       title="@link.RedirectUrl">
+                                        @link.RedirectUrl
+                                    </a>
+                                </td>
+                                <td class="fw-medium">@(string.IsNullOrEmpty(link.Title) ? "Untitled" : link.Title)</td>
+                                <td>
+                                    <span class="badge bg-primary rounded-pill">@link.ClickCount</span>
+                                </td>
+                                <td class="text-muted small">@link.CreatedAt.ToString("MMM dd, yyyy")</td>
+                                <td>
+                                    @if (link.IsActive && (!link.ExpiresAt.HasValue || link.ExpiresAt.Value > DateTime.UtcNow))
+                                    {
+                                        <span class="badge bg-success rounded-pill">
+                                            <i class="bi bi-check-circle-fill me-1"></i>
+                                            Active
+                                        </span>
+                                    }
+                                    else if (link.ExpiresAt.HasValue && link.ExpiresAt.Value <= DateTime.UtcNow)
+                                    {
+                                        <span class="badge bg-warning rounded-pill">
+                                            <i class="bi bi-pause-circle-fill me-1"></i>
+                                            Expired
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary rounded-pill">
+                                            <i class="bi bi-x-circle-fill me-1"></i>
+                                            Inactive
+                                        </span>
+                                    }
+                                </td>
+                                <td class="px-4">
+                                    <div class="btn-group btn-group-sm float-end" role="group">
+                                        <a href="/admin/links/edit/@link.Id"
+                                           class="btn btn-outline-primary"
+                                           title="Edit">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <a href="/admin/analytics/@link.ShortCode"
+                                           class="btn btn-outline-info"
+                                           title="Analytics">
+                                            <i class="bi bi-bar-chart"></i>
+                                        </a>
+                                        <button class="btn btn-outline-danger"
+                                                @onclick="() => ConfirmDelete(link)"
+                                                title="Delete">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-5">
+                <i class="bi bi-link-45deg display-1 text-muted mb-3 d-block"></i>
+                <h5 class="text-muted mb-3">No links found</h5>
+                @if (!string.IsNullOrWhiteSpace(searchTerm))
+                {
+                    <p class="text-muted mb-3">Try adjusting your search criteria</p>
+                    <button class="btn btn-outline-primary" @onclick="ClearSearch">Clear Search</button>
+                }
+                else
+                {
+                    <p class="text-muted mb-3">Get started by creating your first short link</p>
+                    <a href="/admin/links/create" class="btn btn-primary">
+                        <i class="bi bi-plus-circle me-2"></i>
+                        Create Your First Link
+                    </a>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+@if (linkToDelete != null)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background: rgba(0, 0, 0, 0.5);">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header border-bottom-0">
+                    <h5 class="modal-title fw-bold">
+                        <i class="bi bi-exclamation-triangle text-danger me-2"></i>
+                        Confirm Delete
+                    </h5>
+                    <button type="button" class="btn-close" @onclick="CancelDelete"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-3">Are you sure you want to delete the link:</p>
+                    <div class="alert alert-warning mb-3">
+                        <code class="px-2 py-1 rounded" style="background: white; color: #6366f1; font-weight: 600;">@linkToDelete.ShortCode</code>
+                    </div>
+                    <p class="text-muted small mb-0">
+                        <i class="bi bi-info-circle me-1"></i>
+                        This action cannot be undone and will also delete all associated click data.
+                    </p>
+                </div>
+                <div class="modal-footer border-top-0">
+                    <button type="button" class="btn btn-secondary" @onclick="CancelDelete">
+                        Cancel
+                    </button>
+                    <button type="button" class="btn btn-danger d-inline-flex align-items-center gap-2" @onclick="DeleteLink">
+                        <i class="bi bi-trash"></i>
+                        Delete Link
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private IEnumerable<Link>? allLinks;
+    private IEnumerable<Link>? filteredLinks;
+    private string searchTerm = string.Empty;
+    private bool isLoading = true;
+    private Link? linkToDelete;
+
+    LinkService linkService = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadLinks();
+    }
+
+    private async Task LoadLinks()
+    {
+        isLoading = true;
+        allLinks = await linkService.GetAllLinksAsync();
+        FilterLinks();
+        isLoading = false;
+    }
+
+    private void FilterLinks()
+    {
+        if (allLinks == null)
+        {
+            filteredLinks = null;
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(searchTerm))
+        {
+            filteredLinks = allLinks;
+        }
+        else
+        {
+            var term = searchTerm.ToLowerInvariant();
+            filteredLinks = allLinks.Where(l =>
+                l.ShortCode.ToLowerInvariant().Contains(term) ||
+                l.RedirectUrl.ToLowerInvariant().Contains(term) ||
+                (l.Title?.ToLowerInvariant().Contains(term) ?? false)
+            );
+        }
+    }
+
+    private void OnSearchChanged(ChangeEventArgs e)
+    {
+        searchTerm = e.Value?.ToString() ?? string.Empty;
+        FilterLinks();
+    }
+
+    private void ClearSearch()
+    {
+        searchTerm = string.Empty;
+        FilterLinks();
+    }
+
+    private string GetShortUrl(string shortCode)
+    {
+        var baseUrl = Navigation.BaseUri.TrimEnd('/');
+        return $"{baseUrl}/{shortCode}";
+    }
+
+    private async Task CopyToClipboard(string text)
+    {
+        // Note: In a real application, you would use JavaScript interop to copy to clipboard
+        // For now, this is a placeholder
+        await Task.CompletedTask;
+    }
+
+    private void ConfirmDelete(Link link)
+    {
+        linkToDelete = link;
+    }
+
+    private void CancelDelete()
+    {
+        linkToDelete = null;
+    }
+
+    private async Task DeleteLink()
+    {
+        if (linkToDelete != null)
+        {
+            await linkService.DeleteLinkAsync(linkToDelete.Id);
+            linkToDelete = null;
+            await LoadLinks();
+        }
+    }
+}
